@@ -1,0 +1,49 @@
+variables: 
+  MATLAB_LOG_FILE: "MATLAB_Log_Output.txt" 
+  GIT_SUBMODULE_STRATEGY: recursive 
+  MLM_LICENSE_TOKEN: "<USER>|TOKEN_ML|<BATCHTOKEN>" 
+
+ stages: 
+    - SimulinkPipelineGeneration 
+    - SimulinkPipelineExecution 
+
+# Do not change the name of the jobs in this pipeline 
+SimulinkPipelineGeneration:   
+    stage: SimulinkPipelineGeneration 
+    tags: 
+        - docker-matlab 
+ 
+    script: 
+    # Open the project and generate the pipeline using appropriate options  
+        sudo -E matlab-batch  
+        -logfile "MATLAB_LOG_FILE"  
+        -nodesktop  
+         "cp = openProject(pwd);  
+         padv.pipeline.generatePipeline( 
+             padv.pipeline.GitLabOptions( 
+                 PipelineArchitecture = padv.pipeline.Architecture.SerialStagesGroupPerTask,  
+                 Tags = 'docker-matlab',  
+                 GeneratedYMLFileName = 'simulink_pipeline.yml',  
+                 GeneratedPipelineDirectory = fullfile('derived','pipeline'), 
+                 MatlabLaunchCmd = 'xvfb-run -a matlab-batch', 
+                 AddBatchStartupOption = false, 
+                 EnableArtifactCollection = 'always'));"                     
+
+     artifacts: 
+        paths: 
+        # This file is generated automatically by  
+        # padv.pipeline.generatePipeline. Update this field if the  
+        # name or location of the generated pipeline file is changed 
+            - derived/pipeline 
+
+SimulinkPipelineExecution: 
+    stage: SimulinkPipelineExecution 
+    trigger: 
+        include:  
+            - artifact: derived/pipeline/simulink_pipeline.yml 
+              job: SimulinkPipelineGeneration 
+        strategy: depend 
+
+    # Do not change the name of this variable 
+    variables: 
+        PADV_ROOT_PIPELINE_ID: $CI_PIPELINE_ID 
