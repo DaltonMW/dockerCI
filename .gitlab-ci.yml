@@ -1,3 +1,4 @@
+# Copyright 2023 - 2025 The MathWorks, Inc. 
 variables: 
   MATLAB_LOG_FILE: "MATLAB_Log_Output.txt" 
   GIT_SUBMODULE_STRATEGY: recursive 
